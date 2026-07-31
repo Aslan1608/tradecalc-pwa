@@ -1,0 +1,6 @@
+(()=>{"use strict";
+const $=id=>document.getElementById(id);
+function refreshCalculatorLive(){let pdoc;try{pdoc=window.parent.document}catch{return}const frame=pdoc.getElementById("calcFrame");let doc;try{doc=frame?.contentDocument}catch{return}if(!doc)return;const live=doc.getElementById("livePrice"),refresh=doc.getElementById("refreshLive"),apiMsg=doc.getElementById("apiMessage");let hasKey=false;try{hasKey=!!window.parent.localStorage.getItem("tradecalc-finnhub-key")}catch{}if(!hasKey){if(apiMsg){apiMsg.className="api-note warntext";apiMsg.textContent="Live-Preis aus: Finnhub API-Key fehlt auf diesem Gerät."}return}const empty=!live||!live.textContent||live.textContent.trim()==="—";if(empty&&refresh&&!refresh.disabled){refresh.click();if(apiMsg){apiMsg.className="api-note";apiMsg.textContent="Live-Referenzkurs wird nach dem Screenshot-Import aktualisiert …"}}}
+function install(){const b=$("importToCalc");if(!b)return false;b.addEventListener("click",()=>{setTimeout(refreshCalculatorLive,900);setTimeout(refreshCalculatorLive,2200)},true);return true}
+if(!install()){let n=0,t=setInterval(()=>{if(install()||++n>40)clearInterval(t)},100)}
+})();
