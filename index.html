@@ -12,7 +12,7 @@
 fetch('./index-core.html?v=shell1',{cache:'no-store'})
  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
  .then(html=>{
-   html=html.replace('./calculator.html?v=45','./calculator.html?v=events1');
+   html=html.replace('./calculator.html?v=45','./calculator.html?v=events2');
    html=html.replace('<title>TradeCalc V4.5</title>','<title>TradeCalc V4.6 Events</title>');
    html=html.replace('<span class="version">V4.5</span>','<span class="version">V4.6 EVENTS</span>');
    document.open();document.write(html);document.close();
