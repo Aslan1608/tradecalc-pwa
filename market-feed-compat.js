@@ -2,12 +2,26 @@
 function repair(){
   const row=document.querySelector('.safe-row');
   if(!row)return;
+
   let label=row.querySelector('.safe-pill');
-  if(!label){label=document.createElement('span');label.className='safe-pill';row.prepend(label)}
-  if(label.textContent!=='✓ KOSTENLOSER FEED')label.textContent='✓ KOSTENLOSER FEED';
+  if(!label){
+    label=document.createElement('span');
+    label.className='safe-pill';
+    row.prepend(label)
+  }
+  label.textContent='✓ KOSTENLOSER FEED';
+
   let usage=document.getElementById('apiUsage');
-  if(!usage){usage=document.createElement('span');usage.id='apiUsage';row.appendChild(usage)}
-  if(usage.textContent!=='Kein eigenes 10er-Limit')usage.textContent='Kein eigenes 10er-Limit';
+  if(!usage){
+    usage=[...row.querySelectorAll('span')].find(x=>x!==label)||document.createElement('span');
+    usage.id='apiUsage';
+    if(!usage.parentNode)row.appendChild(usage)
+  }
+  usage.textContent='Kein eigenes 10er-Limit';
+
+  [...row.querySelectorAll('span')].forEach(x=>{
+    if(x!==label&&x!==usage)x.remove()
+  })
 }
 function boot(){
   repair();
