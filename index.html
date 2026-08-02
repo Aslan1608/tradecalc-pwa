@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="de">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607"><title>SenSeiS Terminal</title><style>html,body{margin:0;min-height:100%;background:#050607;color:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.load{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}.load strong{font-size:18px}.load span{display:block;color:#8c95a3;font-size:11px;margin-top:7px}</style></head>
-<body><div class="load"><div><strong>SenSeiS Terminal wird geladen …</strong><span>Foundation 2.2 · Hybrid Market Feed</span></div></div>
+<body><div class="load"><div><strong>SenSeiS Terminal wird geladen …</strong><span>Foundation 2.3 · TradingView Workspace</span></div></div>
 <script>
 fetch('./senseis-shell-core.html?v=foundation1',{cache:'no-store'})
  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
  .then(html=>{
-   html=html.replaceAll('FOUNDATION 1','FOUNDATION 2.2');
-   html=html.replace("calc.src='./calculator-core.html?v=senseis1'","calc.src='./calculator.html?v=senseis4'");
+   html=html.replaceAll('FOUNDATION 1','FOUNDATION 2.3');
+   html=html.replace("calc.src='./calculator-core.html?v=senseis1'","calc.src='./calculator.html?v=senseis5'");
    document.open();document.write(html);document.close();
  })
  .catch(e=>{document.body.innerHTML='<div class="load"><div><strong>SenSeiS Terminal konnte nicht geladen werden.</strong><span>'+String(e.message||e)+'</span></div></div>'});
