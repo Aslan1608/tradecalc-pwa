@@ -1,0 +1,151 @@
+(()=>{'use strict';
+const DAX=new Set(['ADS','AIR','ALV','BAS','BAYN','BEI','BMW','BNR','CBK','CON','DTG','DBK','DB1','DHL','DTE','EOAN','FRE','FME','G1A','HNR1','HEI','HEN3','HOT','IFX','MBG','MRK','MTX','MUV2','QIA','RHM','RWE','SAP','G24','SIE','ENR','SHL','SY1','VOW3','VNA','ZAL']);
+const FEED_KEY='senseis-market-feed-url';
+const DAX_CACHE_PREFIX='senseis-dax-last-good-';
+const nativeFetch=window.fetch.bind(window);
+const nativeGet=Storage.prototype.getItem;
+const nativeSet=Storage.prototype.setItem;
+let lastDaxDetail=null;
+
+function currentTicker(){return String(document.getElementById('stock')?.value||'').trim().toUpperCase().replace(/\.DE$/,'')}
+function isDax(t){return DAX.has(String(t||'').toUpperCase().replace(/\.DE$/,''))}
+function feedUrl(){return String(nativeGet.call(localStorage,FEED_KEY)||'').trim().replace(/\/$/,'')}
+function normalizeWebAppUrl(value){const s=String(value||'').trim();return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(s)?s.split('?')[0]:''}
+function response(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}})}
+function cacheKey(t){return DAX_CACHE_PREFIX+t}
+function readCache(t){try{const x=JSON.parse(nativeGet.call(localStorage,cacheKey(t))||'null');return x&&Number(x.data?.c)>0?x:null}catch{return null}}
+function writeCache(t,data){try{nativeSet.call(localStorage,cacheKey(t),JSON.stringify({data,time:Date.now()}))}catch{}}
+function emit(detail){lastDaxDetail=detail;try{window.dispatchEvent(new CustomEvent('senseis:dax-quote',{detail}))}catch{}}
+
+if(!window.__senseisStoragePatch){
+  window.__senseisStoragePatch=true;
+  Storage.prototype.getItem=function(key){
+    if(key==='tradecalc-api-reqs')return'[]';
+    if(key==='tradecalc-finnhub-key'){
+      const actual=nativeGet.call(this,key);
+      if(actual)return actual;
+      if(isDax(currentTicker()))return'SENSEIS_DAX_ONLY';
+      return actual;
+    }
+    return nativeGet.call(this,key);
+  };
+  Storage.prototype.setItem=function(key,value){
+    if(key==='tradecalc-api-reqs')return;
+    return nativeSet.call(this,key,value);
+  };
+}
+
+function jsonp(url,timeout=12000){return new Promise((resolve,reject)=>{
+  const cb='__senseisJsonp_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const script=document.createElement('script');
+  const timer=setTimeout(()=>finish(new Error('DAX_FEED_TIMEOUT')),timeout);
+  function finish(error,data){clearTimeout(timer);try{delete window[cb]}catch{}script.remove();error?reject(error):resolve(data)}
+  window[cb]=data=>finish(null,data);
+  script.onerror=()=>finish(new Error('DAX_FEED_NETWORK'));
+  script.src=url+(url.includes('?')?'&':'?')+'callback='+encodeURIComponent(cb)+'&_='+Date.now();
+  document.head.appendChild(script);
+})}
+
+async function getDaxQuote(ticker){
+  const url=feedUrl();
+  if(!url)throw new Error('DAX_FEED_NOT_CONFIGURED');
+  const recent=readCache(ticker);
+  if(recent&&Date.now()-recent.time<180000){
+    emit({state:'fresh-cache',ticker,data:recent.data,cachedAt:recent.time});
+    return recent.data;
+  }
+  try{
+    const data=await jsonp(url+'?action=quote&symbol='+encodeURIComponent(ticker));
+    if(!data?.ok||!(Number(data.c)>0))throw new Error(data?.error||'DAX_NO_DATA');
+    writeCache(ticker,data);
+    emit({state:'fresh',ticker,data,cachedAt:Date.now()});
+    return data;
+  }catch(error){
+    const cached=readCache(ticker);
+    if(cached){
+      const data={...cached.data,stale:true};
+      emit({state:'stale',ticker,data,cachedAt:cached.time,error:String(error.message||error)});
+      return data;
+    }
+    emit({state:'error',ticker,error:String(error.message||error)});
+    throw error;
+  }
+}
+
+async function getDaxStatus(){
+  const url=feedUrl();
+  if(!url)return{isOpen:false,market:'DE'};
+  try{const d=await jsonp(url+'?action=market-status');return d?.ok?d:{isOpen:false,market:'DE'}}catch{return{isOpen:false,market:'DE'}}
+}
+
+window.__senseisFetchMap=true;
+window.fetch=async(input,init)=>{
+  let raw='';try{raw=typeof input==='string'?input:input.url}catch{return nativeFetch(input,init)}
+  if(!raw.includes('finnhub.io/api/v1/'))return nativeFetch(input,init);
+  let u;try{u=new URL(raw)}catch{return nativeFetch(input,init)}
+  if(u.pathname.endsWith('/quote')){
+    const original=String(u.searchParams.get('symbol')||'').toUpperCase();
+    const ticker=original.replace(/\.DE$/,'');
+    if(isDax(ticker)){
+      try{return response(await getDaxQuote(ticker))}catch(error){return response({error:String(error.message||error)},503)}
+    }
+  }
+  if(u.pathname.endsWith('/stock/market-status')&&isDax(currentTicker()))return response(await getDaxStatus());
+  return nativeFetch(input,init);
+};
+
+function setText(el,text){if(el)el.textContent=text}
+function formatTradeTime(value){const s=String(value||'');const parts=s.split(' ');return parts.length>1?parts.slice(-1)[0]:s||'—'}
+function sourceLabel(){return isDax(currentTicker())?'Google Finance · DAX (15 Min. verzögert)':'Finnhub · US-Realtime-Referenz'}
+function updateStaticUi(){
+  const live=document.querySelector('.card.live');
+  const mini=live?.querySelector('.head .mini');
+  setText(mini,sourceLabel());
+  const safe=document.querySelector('.safe-row');
+  if(safe){safe.innerHTML='<span class="safe-pill">✓ KOSTENLOSER FEED</span><span>Kein eigenes 10er-Limit</span>'}
+  const note=document.querySelector('main>.note');
+  if(note)note.textContent='DAX: Google Finance Referenzkurse mit angezeigter Verzögerung. USA: Finnhub Referenzkurse. Für eine Order bleibt der tatsächliche Broker-Bid-/Ask-Kurs maßgeblich.';
+}
+function applyDaxDetail(detail){
+  setTimeout(()=>{
+    const msg=document.getElementById('apiMessage');
+    const time=document.getElementById('liveTime');
+    const mini=document.querySelector('.card.live .head .mini');
+    if(detail.state==='fresh'||detail.state==='fresh-cache'){
+      setText(mini,(detail.data.source||'Google Finance')+' · '+(detail.data.delayMinutes??15)+' Min. verzögert');
+      if(msg){msg.className='api-note oktext';msg.textContent='DAX-Referenzkurs geladen · '+(detail.data.source||'Google Finance')+' · '+(detail.data.delayMinutes??15)+' Min. verzögert.'}
+      if(time)setText(time,formatTradeTime(detail.data.tradeTime)+' · verzögert');
+    }else if(detail.state==='stale'){
+      if(msg){msg.className='api-note warntext';msg.textContent='Letzter gültiger DAX-Kurs angezeigt · Google-Feed momentan nicht erreichbar.'}
+      if(time)setText(time,new Date(detail.cachedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' · Cache');
+    }else if(detail.state==='error'){
+      if(msg){msg.className='api-note warntext';msg.textContent=detail.error==='DAX_FEED_NOT_CONFIGURED'?'DAX-Feed noch nicht verbunden. Unter ⚙️ API die Google-Web-App-URL eintragen.':'DAX-Kurs konnte nicht geladen werden: '+detail.error}
+    }
+  },180)}
+window.addEventListener('senseis:dax-quote',e=>applyDaxDetail(e.detail||{}));
+
+function installSettings(){
+  const modal=document.getElementById('apiModal');
+  const input=document.getElementById('apiKeyInput');
+  if(!modal||!input||document.getElementById('marketFeedUrlInput'))return;
+  const title=modal.querySelector('.mtitle h3');if(title)title.textContent='Marktdaten';
+  const keyLabel=input.closest('label');
+  const keySpan=keyLabel?.querySelector('span');if(keySpan)keySpan.textContent='Finnhub API-Key · nur USA';
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<label><span>DAX Google-Web-App-URL</span><input id="marketFeedUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></label><button id="saveMarketFeed" class="secondary" style="width:100%;margin:10px 0 14px">DAX-Feed speichern & testen</button><p id="marketFeedMessage" class="api-note">Das Google-Sheet bleibt privat. Die Web-App liefert ausschließlich Börsenkurse.</p>';
+  modal.querySelector('.key-actions')?.insertAdjacentElement('beforebegin',wrap);
+  const urlInput=document.getElementById('marketFeedUrlInput');urlInput.value=feedUrl();
+  document.getElementById('saveMarketFeed')?.addEventListener('click',async()=>{
+    const message=document.getElementById('marketFeedMessage');
+    const url=normalizeWebAppUrl(urlInput.value);
+    if(!url){message.className='api-note warntext';message.textContent='Bitte die vollständige Apps-Script-Web-App-URL mit /exec einfügen.';return}
+    nativeSet.call(localStorage,FEED_KEY,url);message.className='api-note';message.textContent='Verbindung wird getestet …';
+    try{const health=await jsonp(url+'?action=health');if(!health?.ok)throw new Error(health?.error||'HEALTH_FAILED');message.className='api-note oktext';message.textContent='✓ DAX-Feed verbunden · '+(health.symbols||40)+' Titel verfügbar.';updateStaticUi();setTimeout(()=>document.getElementById('refreshLive')?.click(),300)}catch(error){message.className='api-note warntext';message.textContent='Verbindung fehlgeschlagen: '+String(error.message||error)}
+  });
+  const oldNote=modal.querySelector('.modal>.api-note');if(oldNote)oldNote.textContent='Der Finnhub-Key bleibt ausschließlich im Browser dieses Geräts. Für DAX wird kein Finnhub-Key verwendet.';
+  document.getElementById('apiSettings')?.addEventListener('click',()=>setTimeout(()=>{urlInput.value=feedUrl();const actual=nativeGet.call(localStorage,'tradecalc-finnhub-key')||'';input.value=actual},0));
+}
+function onStockChange(){updateStaticUi();const msg=document.getElementById('apiMessage');if(isDax(currentTicker())&&!feedUrl()&&msg){msg.className='api-note warntext';msg.textContent='DAX-Feed noch nicht verbunden. Unter ⚙️ API die Google-Web-App-URL eintragen.'}}
+function boot(){updateStaticUi();installSettings();document.getElementById('stock')?.addEventListener('change',()=>setTimeout(onStockChange,100));onStockChange();if(lastDaxDetail)applyDaxDetail(lastDaxDetail)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
