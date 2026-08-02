@@ -7,7 +7,7 @@ fetch('./senseis-shell-core.html?v=foundation1',{cache:'no-store'})
  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
  .then(html=>{
    html=html.replaceAll('FOUNDATION 1','FOUNDATION 2.2');
-   html=html.replace("calc.src='./calculator-core.html?v=senseis1'","calc.src='./calculator.html?v=senseis5'");
+   html=html.replace("calc.src='./calculator-core.html?v=senseis1'","calc.src='./calculator.html?v=senseis6'");
    document.open();document.write(html);document.close();
  })
  .catch(e=>{document.body.innerHTML='<div class="load"><div><strong>SenSeiS Terminal konnte nicht geladen werden.</strong><span>'+String(e.message||e)+'</span></div></div>'});
