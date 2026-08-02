@@ -1,5 +1,6 @@
 const SHEET_ID = '1W-Nfv54mLy8Dmgaf3kGoYWqRR_J8VUUxYsiAIqYwlpM';
 const SHEET_NAME = 'Quotes';
+const SEC_USER_AGENT = 'SenSeiS Terminal https://github.com/Aslan1608/tradecalc-pwa';
 const DAX_TICKERS = new Set([
   'ADS','AIR','ALV','BAS','BAYN','BEI','BMW','BNR','CBK','CON',
   'DTG','DBK','DB1','DHL','DTE','EOAN','FRE','FME','G1A','HNR1',
@@ -17,9 +18,11 @@ function doGet(e) {
     if (action === 'health') {
       payload = {
         ok: true,
-        service: 'SenSeiS DAX Market Feed',
+        service: 'SenSeiS Market Intelligence Feed',
         symbols: DAX_TICKERS.size,
         fundamentals: true,
+        secFinancials: true,
+        news: true,
         time: new Date().toISOString()
       };
     } else if (action === 'quote') {
@@ -28,6 +31,12 @@ function doGet(e) {
     } else if (action === 'fundamentals') {
       if (!symbol) throw new Error('SYMBOL_REQUIRED');
       payload = getGermanFundamentals_(symbol);
+    } else if (action === 'us-financials') {
+      if (!symbol) throw new Error('SYMBOL_REQUIRED');
+      payload = getUsFinancials_(symbol);
+    } else if (action === 'news') {
+      if (!symbol) throw new Error('SYMBOL_REQUIRED');
+      payload = getCompanyNews_(symbol, params.name || '');
     } else if (action === 'market-status') {
       payload = getGermanMarketStatus_();
     } else {
@@ -77,7 +86,7 @@ function getGermanQuote_(symbol) {
     symbol: symbol,
     c: price,
     d: Number.isFinite(previousClose) ? price - previousClose : null,
-    dp: Number.isFinite(changePct) ? changePct : null,
+    dp: finiteOrNull_(changePct),
     h: finiteOrNull_(high),
     l: finiteOrNull_(low),
     o: null,
@@ -138,6 +147,154 @@ function getGermanFundamentals_(symbol) {
   return payload;
 }
 
+function getUsFinancials_(symbol) {
+  if (!/^[A-Z][A-Z0-9.\-]{0,9}$/.test(symbol)) throw new Error('US_SYMBOL_INVALID');
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'sec-financials:' + symbol;
+  const cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const tickers = fetchJson_('https://www.sec.gov/files/company_tickers.json', true);
+  const record = Object.keys(tickers).map(function (key) { return tickers[key]; }).find(function (item) {
+    return String(item.ticker || '').toUpperCase() === symbol;
+  });
+  if (!record) throw new Error('SEC_TICKER_NOT_FOUND');
+
+  const cik = String(record.cik_str).padStart(10, '0');
+  const facts = fetchJson_('https://data.sec.gov/api/xbrl/companyfacts/CIK' + cik + '.json', true);
+  const gaap = (facts.facts && facts.facts['us-gaap']) || {};
+
+  const revenue = annualSeries_(gaap, [
+    'RevenueFromContractWithCustomerExcludingAssessedTax',
+    'Revenues',
+    'SalesRevenueNet',
+    'SalesRevenueGoodsNet'
+  ]);
+  const operatingIncome = annualSeries_(gaap, ['OperatingIncomeLoss']);
+  const netIncome = annualSeries_(gaap, ['NetIncomeLoss', 'ProfitLoss']);
+  const depreciation = annualSeries_(gaap, [
+    'DepreciationDepletionAndAmortization',
+    'DepreciationDepletionAndAmortizationPropertyPlantAndEquipment',
+    'Depreciation'
+  ]);
+
+  const years = Array.from(new Set(
+    revenue.concat(operatingIncome, netIncome, depreciation).map(function (x) { return x.year; })
+  )).sort().slice(-5);
+  const byYear = function (series, year) {
+    const item = series.find(function (x) { return x.year === year; });
+    return item ? item.value : null;
+  };
+
+  const annual = years.map(function (year) {
+    const op = byYear(operatingIncome, year);
+    const da = byYear(depreciation, year);
+    return {
+      year: year,
+      revenue: byYear(revenue, year),
+      operatingIncome: op,
+      depreciationAmortization: da,
+      ebitdaApprox: Number.isFinite(op) && Number.isFinite(da) ? op + da : null,
+      netIncome: byYear(netIncome, year)
+    };
+  });
+
+  const payload = {
+    ok: true,
+    symbol: symbol,
+    companyName: facts.entityName || record.title || symbol,
+    cik: cik,
+    currency: 'USD',
+    annual: annual,
+    source: 'SEC EDGAR / Company Facts',
+    ebitdaNote: 'EBITDA-Näherung = operatives Ergebnis + Abschreibungen, sofern beide SEC-Werte verfügbar sind.',
+    updatedAt: new Date().toISOString()
+  };
+  cache.put(cacheKey, JSON.stringify(payload), 21600);
+  return payload;
+}
+
+function annualSeries_(taxonomy, candidateTags) {
+  for (let i = 0; i < candidateTags.length; i++) {
+    const concept = taxonomy[candidateTags[i]];
+    if (!concept || !concept.units) continue;
+    const units = concept.units.USD || concept.units['USD'];
+    if (!Array.isArray(units)) continue;
+    const byYear = {};
+    units.forEach(function (fact) {
+      const form = String(fact.form || '');
+      const year = Number(fact.fy);
+      const value = Number(fact.val);
+      if (!Number.isFinite(year) || !Number.isFinite(value)) return;
+      if (form !== '10-K' && form !== '10-K/A') return;
+      if (String(fact.fp || '') !== 'FY') return;
+      const filed = String(fact.filed || '');
+      if (!byYear[year] || filed > byYear[year].filed) byYear[year] = {year: year, value: value, filed: filed};
+    });
+    const series = Object.keys(byYear).map(function (year) { return byYear[year]; }).sort(function (a, b) { return a.year - b.year; });
+    if (series.length) return series;
+  }
+  return [];
+}
+
+function getCompanyNews_(symbol, suppliedName) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'news:' + symbol;
+  const cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  let companyName = sanitizeName_(suppliedName);
+  if (DAX_TICKERS.has(symbol)) companyName = getSheetRow_(symbol)[1] || symbol;
+  if (!companyName) companyName = symbol;
+
+  const query = '"' + companyName + '" Aktie OR Stock when:14d';
+  const url = 'https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&hl=de&gl=DE&ceid=DE:de';
+  const response = UrlFetchApp.fetch(url, {muteHttpExceptions: true, followRedirects: true});
+  if (response.getResponseCode() >= 400) throw new Error('NEWS_HTTP_' + response.getResponseCode());
+
+  const doc = XmlService.parse(response.getContentText());
+  const channel = doc.getRootElement().getChild('channel');
+  const items = channel ? channel.getChildren('item') : [];
+  const news = items.slice(0, 6).map(function (item) {
+    const sourceNode = item.getChild('source');
+    return {
+      title: childText_(item, 'title'),
+      url: childText_(item, 'link'),
+      publishedAt: childText_(item, 'pubDate'),
+      source: sourceNode ? sourceNode.getText() : ''
+    };
+  }).filter(function (item) { return item.title && item.url; });
+
+  const payload = {
+    ok: true,
+    symbol: symbol,
+    companyName: companyName,
+    news: news,
+    source: 'Google News RSS',
+    updatedAt: new Date().toISOString()
+  };
+  cache.put(cacheKey, JSON.stringify(payload), 900);
+  return payload;
+}
+
+function childText_(node, name) {
+  const child = node.getChild(name);
+  return child ? child.getText() : '';
+}
+
+function sanitizeName_(value) {
+  return String(value || '').replace(/[^A-Za-zÀ-ž0-9 .,&'\-]/g, '').trim().slice(0, 100);
+}
+
+function fetchJson_(url, secHeaders) {
+  const options = {muteHttpExceptions: true, followRedirects: true};
+  if (secHeaders) options.headers = {'User-Agent': SEC_USER_AGENT, 'Accept-Encoding': 'gzip, deflate'};
+  const response = UrlFetchApp.fetch(url, options);
+  const status = response.getResponseCode();
+  if (status < 200 || status >= 300) throw new Error('HTTP_' + status);
+  return JSON.parse(response.getContentText());
+}
+
 function getGermanMarketStatus_() {
   const timezone = 'Europe/Berlin';
   const now = new Date();
@@ -181,12 +338,8 @@ function finiteOrDefault_(value, fallback) {
 function output_(data, callback) {
   const json = JSON.stringify(data);
   const callbackName = String(callback || '');
-  const safeCallback = /^[A-Za-z_$][0-9A-Za-z_$\.]*$/.test(callbackName)
-    ? callbackName
-    : '';
+  const safeCallback = /^[A-Za-z_$][0-9A-Za-z_$\.]*$/.test(callbackName) ? callbackName : '';
   return ContentService
     .createTextOutput(safeCallback ? safeCallback + '(' + json + ');' : json)
-    .setMimeType(safeCallback
-      ? ContentService.MimeType.JAVASCRIPT
-      : ContentService.MimeType.JSON);
+    .setMimeType(safeCallback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
