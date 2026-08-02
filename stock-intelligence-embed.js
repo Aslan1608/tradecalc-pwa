@@ -1,5 +1,6 @@
 (()=>{'use strict';
 const STYLE_ID='senseis-stock-intelligence-embed-style';
+const SIGNAL_CLASSES=['signal-green','signal-orange','signal-red','signal-neutral','low','medium','high','error'];
 let applying=false;
 let watchedCard=null;
 let cardObserver=null;
@@ -52,13 +53,23 @@ function signalState(){
   const badgeText=String($('eventBadge')?.textContent||'');
   const titleText=String($('eventTitle')?.textContent||'');
   const messageText=String($('eventMessage')?.textContent||'');
-  if(/API FEHLER|Abruf fehlgeschlagen|Key fehlt|Netzwerk|abgewiesen|Limit 429|SAFE_LIMIT/i.test(badgeText+' '+titleText+' '+messageText))return{state:'neutral',days:null,noFuture:false};
-  if(/Keine kommenden Earnings gefunden/i.test(titleText))return{state:'green',days:null,noFuture:true};
+  const all=badgeText+' '+titleText+' '+messageText;
+  if(/API FEHLER|Abruf fehlgeschlagen|Key fehlt|Netzwerk|abgewiesen|Limit 429|SAFE_LIMIT/i.test(all))return{state:'neutral',days:null,noFuture:false};
+  if(/Keine kommenden Earnings gefunden|kein kommender Termin|kein bestätigtes Event/i.test(all))return{state:'green',days:null,noFuture:true};
   const days=parseDays();
   if(days===0)return{state:'red',days,noFuture:false};
   if(Number.isFinite(days)&&days>=1&&days<=7)return{state:'orange',days,noFuture:false};
   if(Number.isFinite(days)&&days>7)return{state:'green',days,noFuture:false};
   return{state:'neutral',days:null,noFuture:false};
+}
+
+function setSignalClass(el,state){
+  if(!el)return;
+  const desired='signal-'+state;
+  const already=el.classList.contains(desired)&&!SIGNAL_CLASSES.some(name=>name!==desired&&el.classList.contains(name));
+  if(already)return;
+  el.classList.remove(...SIGNAL_CLASSES);
+  el.classList.add(desired);
 }
 
 function applySignal(){
@@ -69,9 +80,8 @@ function applySignal(){
     const hero=$('eventHero');
     const title=$('eventTitle');
     const result=signalState();
-    const states=['signal-green','signal-orange','signal-red','signal-neutral','low','medium','high','error'];
-    if(badge){badge.classList.remove(...states);badge.classList.add('signal-'+result.state)}
-    if(hero){hero.classList.remove(...states);hero.classList.add('signal-'+result.state)}
+    setSignalClass(badge,result.state);
+    setSignalClass(hero,result.state);
 
     if(result.state==='red'){
       setText(badge,'🔴 EVENT HEUTE');
@@ -103,8 +113,8 @@ function embed(){
   const card=$('eventCard');
   if(!live||!card)return false;
   if(card.parentElement!==live)live.appendChild(card);
-  card.classList.remove('card');
-  card.classList.add('event-card-embedded');
+  if(card.classList.contains('card'))card.classList.remove('card');
+  if(!card.classList.contains('event-card-embedded'))card.classList.add('event-card-embedded');
   const heading=card.querySelector('.event-top h2');
   const mini=card.querySelector('.event-top .mini');
   setText(heading,'Stock Intelligence');
