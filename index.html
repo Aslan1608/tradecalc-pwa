@@ -8,7 +8,7 @@ fetch('./senseis-shell-core.html?v=foundation-static-28',{cache:'no-store'})
  .then(html=>{
    html=html.replaceAll('FOUNDATION 1','FOUNDATION 2.8');
    html=html.replace('src="./index-core.html?v=senseis1"','src="./trade-tools-loader.html?v=6-final-static"');
-   html=html.replace('</body>','<script src="./stock-intelligence-stability.js?v=2"><\/script><script src="./stock-intelligence.js?v=4"><\/script><script src="./stock-financials-recovery.js?v=1"><\/script></body>');
+   html=html.replace('</body>','<script src="./stock-intelligence-stability.js?v=2"><\/script><script src="./stock-intelligence.js?v=4"><\/script><script src="./stock-financials-recovery.js?v=2"><\/script></body>');
    document.open();document.write(html);document.close();
  })
  .catch(e=>{document.body.innerHTML='<div class="load"><div><strong>SenSeiS Terminal konnte nicht geladen werden.</strong><span>'+String(e.message||e)+'</span></div></div>'});
