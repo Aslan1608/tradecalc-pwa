@@ -11,7 +11,7 @@ fetch('./senseis-shell-core.html',{cache:'no-store'})
    html=html.replace('src="./index-core.html?v=senseis1"','src="./index-core.html?v=legacy-main-fresh-1"');
    html=html.replace('Manueller Rechner · Screenshot Import','Legacy TradeCalc · Screenshot Import');
    html=html.replace(/<a class="more-btn" href="\.\/index-core\.html" target="_blank">[\s\S]*?<\/a>/,'');
-   html=html.replace('</body>','<script src="./senseis-version.js"><\/script><script src="./legacy-main-force.js?v=1"><\/script><script src="./finnhub-key-persistence.js?v=3"><\/script><script src="./stock-intelligence-stability.js?v=2"><\/script><script src="./stock-intelligence.js?v=5"><\/script><script src="./stock-financials-recovery.js?v=2"><\/script><script src="./news-intelligence-data.js?v=1"><\/script><script src="./news-intelligence-recall-patch.js?v=4"><\/script><script src="./news-intelligence-v37.js?v=3"><\/script></body>');
+   html=html.replace('</body>','<script src="./senseis-version.js"><\/script><script src="./legacy-main-force.js?v=1"><\/script><script src="./finnhub-key-persistence.js?v=3"><\/script><script src="./stock-intelligence-stability.js?v=2"><\/script><script src="./senseis-timers.js"><\/script><script src="./stock-intelligence.js?v=5"><\/script><script src="./stock-financials-recovery.js?v=2"><\/script><script src="./news-intelligence-data.js?v=1"><\/script><script src="./news-intelligence-recall-patch.js?v=4"><\/script><script src="./news-intelligence-v37.js?v=3"><\/script></body>');
    document.open();document.write(html);document.close();
  })
  .catch(e=>{document.body.innerHTML='<div class="load"><div><strong>SenSeiS Terminal konnte nicht geladen werden.</strong><span>'+String(e.message||e)+'</span></div></div>'});
