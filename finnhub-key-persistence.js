@@ -1,33 +1,72 @@
 (()=>{'use strict';
-const KEY='tradecalc-finnhub-key';
-const BACKUP='senseis-finnhub-key-backup-v1';
 const DB_NAME='senseis-terminal-settings';
 const STORE='settings';
-const RECORD='finnhub-api-key';
+const CHANNEL='senseis-api-settings-v1';
 const rawGet=Storage.prototype.getItem;
 const rawSet=Storage.prototype.setItem;
 const rawRemove=Storage.prototype.removeItem;
-let memory='';
+const memory=Object.create(null);
+const CONFIG={
+  'tradecalc-finnhub-key':{
+    backup:'senseis-finnhub-key-backup-v1',
+    record:'finnhub-api-key',
+    clean(value){const key=String(value||'').trim();return key&&key!=='SENSEIS_DAX_ONLY'?key:''}
+  },
+  'senseis-market-feed-url':{
+    backup:'senseis-market-feed-url-backup-v1',
+    record:'market-feed-url',
+    clean(value){const url=String(value||'').trim();return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(url)?url.split('?')[0]:''}
+  }
+};
+let channel=null;
 
-function clean(value){const key=String(value||'').trim();return key&&key!=='SENSEIS_DAX_ONLY'?key:''}
-function localRead(key){try{return clean(rawGet.call(localStorage,key))}catch{return''}}
+function localRead(key,cleaner){try{return cleaner(rawGet.call(localStorage,key))}catch{return''}}
 function localWrite(key,value){try{rawSet.call(localStorage,key,value)}catch{}}
 function localDelete(key){try{rawRemove.call(localStorage,key)}catch{}}
 function openDb(){return new Promise((resolve,reject)=>{try{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE)};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('IDB_BLOCKED'))}catch(error){reject(error)}})}
-async function dbRead(){let db;try{db=await openDb();return await new Promise((resolve,reject)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).get(RECORD);req.onsuccess=()=>resolve(clean(req.result));req.onerror=()=>reject(req.error)})}catch{return''}finally{try{db?.close()}catch{}}}
-async function dbWrite(value){let db;try{db=await openDb();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,RECORD);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}catch{}finally{try{db?.close()}catch{}}}
-async function dbDelete(){let db;try{db=await openDb();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(RECORD);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}catch{}finally{try{db?.close()}catch{}}}
-function persist(value){const key=clean(value);if(!key)return'';memory=key;localWrite(KEY,key);localWrite(BACKUP,key);dbWrite(key);try{navigator.storage?.persist?.()}catch{}return key}
-function clear(){memory='';localDelete(KEY);localDelete(BACKUP);dbDelete()}
+async function dbRead(record,cleaner){let db;try{db=await openDb();return await new Promise((resolve,reject)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).get(record);req.onsuccess=()=>resolve(cleaner(req.result));req.onerror=()=>reject(req.error)})}catch{return''}finally{try{db?.close()}catch{}}}
+async function dbWrite(record,value){let db;try{db=await openDb();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}catch{}finally{try{db?.close()}catch{}}}
+async function dbDelete(record){let db;try{db=await openDb();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(record);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}catch{}finally{try{db?.close()}catch{}}}
+function configFor(key){return CONFIG[key]||null}
+function read(key){const cfg=configFor(key);if(!cfg)return'';return localRead(key,cfg.clean)||localRead(cfg.backup,cfg.clean)||memory[key]||''}
+function notify(key,source='updated'){
+  try{channel?.postMessage({type:'api-setting',key,source})}catch{}
+  try{window.dispatchEvent(new CustomEvent('senseis:api-settings-restored',{detail:{key,source}}))}catch{}
+  [180,650,1600,3200].forEach(delay=>setTimeout(()=>{
+    try{document.getElementById('refreshLive')?.click()}catch{}
+    try{document.getElementById('siRefresh')?.click()}catch{}
+    try{const input=document.getElementById('apiKeyInput');if(input&&key==='tradecalc-finnhub-key')input.value=read(key)}catch{}
+    try{const input=document.getElementById('marketFeedUrlInput');if(input&&key==='senseis-market-feed-url')input.value=read(key)}catch{}
+  },delay));
+}
+function persist(key,value,announce=true){const cfg=configFor(key);if(!cfg)return'';const clean=cfg.clean(value);if(!clean)return'';memory[key]=clean;localWrite(key,clean);localWrite(cfg.backup,clean);dbWrite(cfg.record,clean);try{navigator.storage?.persist?.()}catch{}if(announce)notify(key,'saved');return clean}
+function clear(key,announce=true){const cfg=configFor(key);if(!cfg)return;memory[key]='';localDelete(key);localDelete(cfg.backup);dbDelete(cfg.record);if(announce)notify(key,'cleared')}
 
-if(!window.__senseisFinnhubPersistence){
-  window.__senseisFinnhubPersistence=true;
-  Storage.prototype.getItem=function(key){if(key===KEY)return localRead(KEY)||localRead(BACKUP)||memory||null;return rawGet.call(this,key)};
-  Storage.prototype.setItem=function(key,value){if(key===KEY){persist(value);return}return rawSet.call(this,key,value)};
-  Storage.prototype.removeItem=function(key){if(key===KEY){clear();return}return rawRemove.call(this,key)};
+if(!window.__senseisApiPersistencePatch){
+  window.__senseisApiPersistencePatch=true;
+  Storage.prototype.getItem=function(key){const cfg=configFor(key);if(cfg)return read(key)||null;return rawGet.call(this,key)};
+  Storage.prototype.setItem=function(key,value){const cfg=configFor(key);if(cfg){persist(key,value,true);return}return rawSet.call(this,key,value)};
+  Storage.prototype.removeItem=function(key){const cfg=configFor(key);if(cfg){clear(key,true);return}return rawRemove.call(this,key)};
 }
 
-async function restore(){const primary=localRead(KEY),backup=localRead(BACKUP),indexed=await dbRead();const key=primary||backup||indexed;if(!key)return'';const restored=!primary;persist(key);if(restored){setTimeout(()=>document.getElementById('refreshLive')?.click(),300);try{window.dispatchEvent(new CustomEvent('senseis:finnhub-key-restored'))}catch{}}return key}
+try{
+  channel=new BroadcastChannel(CHANNEL);
+  channel.onmessage=event=>{const key=event?.data?.key;if(configFor(key))notify(key,'cross-context')};
+}catch{}
+window.addEventListener('storage',event=>{if(configFor(event.key)||Object.values(CONFIG).some(cfg=>cfg.backup===event.key))notify(event.key,'storage')});
+
+async function restoreOne(key){const cfg=configFor(key);const primary=localRead(key,cfg.clean);const backup=localRead(cfg.backup,cfg.clean);const indexed=await dbRead(cfg.record,cfg.clean);const value=primary||backup||indexed;if(!value)return{key,value:'',restored:false};persist(key,value,false);return{key,value,restored:!primary}}
+async function restore(){const results=await Promise.all(Object.keys(CONFIG).map(restoreOne));for(const result of results)if(result.value)notify(result.key,result.restored?'restored':'ready');return results}
 restore();
-window.SenSeiSFinnhubPersistence={restore,save:persist,clear,get:()=>localRead(KEY)||localRead(BACKUP)||memory};
+
+window.SenSeiSApiPersistence={
+  restore,
+  getFinnhub:()=>read('tradecalc-finnhub-key'),
+  saveFinnhub:value=>persist('tradecalc-finnhub-key',value,true),
+  clearFinnhub:()=>clear('tradecalc-finnhub-key',true),
+  getFeed:()=>read('senseis-market-feed-url'),
+  saveFeed:value=>persist('senseis-market-feed-url',value,true),
+  clearFeed:()=>clear('senseis-market-feed-url',true)
+};
+window.SenSeiSFinnhubPersistence={restore,save:window.SenSeiSApiPersistence.saveFinnhub,clear:window.SenSeiSApiPersistence.clearFinnhub,get:window.SenSeiSApiPersistence.getFinnhub};
 })();
