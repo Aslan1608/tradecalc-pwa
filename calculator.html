@@ -9,10 +9,10 @@
 </head>
 <body><div class="load"><div><strong>Trade Calculator wird geladen …</strong><span>Legacy Core · Finnhub-Key wird lokal wiederhergestellt</span></div></div>
 <script>
-fetch('./calculator-core.html?v=core-legacy-keyvault-1',{cache:'no-store'})
+fetch('./calculator-core.html?v=core-legacy-keyvault-2',{cache:'no-store'})
  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
  .then(html=>{
-   const beforeCore='<script src="./finnhub-key-vault.js?v=1"><\/script><script src="./market-feed.js?v=4"><\/script>';
+   const beforeCore='<script src="./finnhub-key-vault.js?v=2"><\/script><script src="./market-feed.js?v=4"><\/script>';
    const afterCore='<script src="./market-feed-compat.js?v=3"><\/script><script src="./index-universe.js?v=4"><\/script><script src="./earnings-module.js?v=4"><\/script><script src="./tradingview-chart-left.js?v=2"><\/script>';
    html=html.includes('</head>')?html.replace('</head>',beforeCore+'</head>'):beforeCore+html;
    html=html.includes('</body>')?html.replace('</body>',afterCore+'</body>'):html+afterCore;
