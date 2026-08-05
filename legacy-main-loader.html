@@ -11,11 +11,11 @@
 <div class="load"><div><strong>Legacy Trade Workspace wird geladen …</strong><span>Ein Calculator · TradingView · DAX/S&amp;P 500</span></div></div>
 <script>
 (()=>{
-  const BUILD='20260805-legacy-main-1';
+  const BUILD='20260805-legacy-main-2';
   fetch('./index-core.html?build='+BUILD,{cache:'no-store'})
     .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text()})
     .then(html=>{
-      html=html.replace(/src=["']\.\/calculator\.html\?v=[^"']+["']/, 'src="./calculator-legacy-persistent.html?v='+BUILD+'"');
+      html=html.replace(/src=["']\.\/calculator\.html\?v=[^"']+["']/, 'src="./calculator.html?v='+BUILD+'"');
       html=html.replace(/src=["']\.\/screenshot-import\.html\?v=[^"']+["']/, 'src="./screenshot-import.html?v=45-'+BUILD+'"');
       document.open();document.write(html);document.close();
     })
