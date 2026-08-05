@@ -21,10 +21,15 @@ async function dbSet(value){let db;try{db=await openDb();await new Promise((reso
 async function dbDelete(){let db;try{db=await openDb();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(RECORD);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}catch{}finally{try{db?.close()}catch{}}}
 function updateInput(value){const input=document.getElementById('apiKeyInput');if(input&&value&&!input.value)input.value=value}
 function showStatus(text,kind='ok'){const message=document.getElementById('apiMessage');if(!message)return;message.className='api-note '+(kind==='ok'?'oktext':'warntext');message.textContent=text}
+function refreshConsumers(){
+  try{window.dispatchEvent(new CustomEvent('senseis:finnhub-key-restored'))}catch{}
+  setTimeout(()=>document.getElementById('refreshLive')?.click(),250);
+  setTimeout(()=>document.getElementById('siRefresh')?.click(),850);
+}
 async function requestPersistentStorage(){try{if(navigator.storage?.persist)await navigator.storage.persist()}catch{}}
 async function save(value,{requestPersistence=false,announce=false}={}){const key=clean(value);if(!key)return false;recoveredKey=key;localSet(PRIMARY,key);localSet(BACKUP,key);await dbSet(key);if(requestPersistence)await requestPersistentStorage();updateInput(key);if(announce)showStatus('✓ Finnhub-Key dauerhaft auf diesem Gerät gesichert.');return true}
 async function clear(){recoveredKey='';localRemove(PRIMARY);localRemove(BACKUP);await dbDelete()}
-async function recover(){if(recoveryPromise)return recoveryPromise;recoveryPromise=(async()=>{const primary=localGet(PRIMARY);const backup=localGet(BACKUP);const indexed=await dbGet();const key=primary||backup||indexed;if(!key)return'';const neededRestore=!primary||primary!==key||!backup||backup!==key;await save(key);if(neededRestore)showStatus('✓ Finnhub-Key aus der lokalen Gerätesicherung wiederhergestellt.');return key})();return recoveryPromise}
+async function recover(){if(recoveryPromise)return recoveryPromise;recoveryPromise=(async()=>{const primary=localGet(PRIMARY);const backup=localGet(BACKUP);const indexed=await dbGet();const key=primary||backup||indexed;if(!key)return'';const neededRestore=!primary||primary!==key||!backup||backup!==key;await save(key);if(neededRestore){showStatus('✓ Finnhub-Key aus der lokalen Gerätesicherung wiederhergestellt.');refreshConsumers()}return key})();return recoveryPromise}
 function backupCurrent(){const key=localGet(PRIMARY)||recoveredKey;if(key)save(key)}
 function attachUi(){
   const saveButton=document.getElementById('saveKey');
