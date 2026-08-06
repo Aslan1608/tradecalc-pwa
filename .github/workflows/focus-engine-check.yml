@@ -6,11 +6,14 @@ on:
       - 'focus-engine.js'
       - 'focus-menu.js'
       - 'focus-explainability.js'
+      - 'focus-list-v2.js'
+      - 'focus-decision.js'
       - 'focus-universe.json'
       - 'senseis-version.js'
       - 'sw.js'
       - 'tests/focus-engine.test.cjs'
       - 'tests/focus-explainability.test.cjs'
+      - 'tests/focus-decision.test.cjs'
       - '.github/workflows/focus-engine-check.yml'
   workflow_dispatch:
 
@@ -30,11 +33,22 @@ jobs:
           node --check focus-engine.js
           node --check focus-menu.js
           node --check focus-explainability.js
+          node --check focus-list-v2.js
+          if [ -f focus-decision.js ]; then node --check focus-decision.js; fi
           node --check senseis-version.js
           node --check sw.js
       - name: Fixture tests
         run: |
           node tests/focus-engine.test.cjs
           node tests/focus-explainability.test.cjs
+          if [ -f tests/focus-decision.test.cjs ]; then node tests/focus-decision.test.cjs; fi
       - name: Universe JSON check
-        run: node -e "JSON.parse(require('fs').readFileSync('focus-universe.json','utf8')); console.log('focus-universe.json valid')"
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('focus-universe.json','utf8'));
+          const symbols=(data.tickers||[]).map(x=>x.symbol);
+          if(symbols.length!==16)throw new Error(`expected 16 focus-universe values, got ${symbols.length}`);
+          if(new Set(symbols).size!==symbols.length)throw new Error('duplicate focus-universe symbols');
+          console.log('focus-universe.json valid with 16 unique values');
+          NODE
