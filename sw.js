@@ -39,15 +39,16 @@ function isStatic(request,url){
   return url.origin===self.location.origin&&['script','style','image','font','manifest'].includes(request.destination);
 }
 function isRuntimeData(request,url){
+  if(url.origin!==self.location.origin)return false;
   const path=url.pathname.toLowerCase();
-  return /news|quote|financial|earnings|market|company/.test(path)||url.origin!==self.location.origin;
+  return /news|quote|financial|earnings|market|company/.test(path);
 }
 
 async function cacheFirst(request){
   const cached=await caches.match(request);
   if(cached)return cached;
   const response=await fetch(request);
-  if(response&&response.ok){const cache=await caches.open(APP_CACHE);cache.put(request,response.clone());}
+  if(response&&response.ok){const cache=await caches.open(APP_CACHE);await cache.put(request,response.clone());}
   return response;
 }
 
@@ -55,7 +56,7 @@ async function networkFirst(request){
   const cache=await caches.open(RUNTIME_CACHE);
   try{
     const response=await fetch(request);
-    if(response&&(response.ok||response.type==='opaque'))await cache.put(request,response.clone());
+    if(response&&response.ok)await cache.put(request,response.clone());
     return response;
   }catch(error){
     const cached=await cache.match(request);
