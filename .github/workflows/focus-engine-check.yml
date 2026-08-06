@@ -4,7 +4,10 @@ on:
   pull_request:
     paths:
       - 'focus-engine.js'
+      - 'focus-menu.js'
       - 'focus-universe.json'
+      - 'senseis-version.js'
+      - 'sw.js'
       - 'tests/focus-engine.test.cjs'
       - '.github/workflows/focus-engine-check.yml'
   workflow_dispatch:
@@ -21,7 +24,11 @@ jobs:
         with:
           node-version: '22'
       - name: Syntax check
-        run: node --check focus-engine.js
+        run: |
+          node --check focus-engine.js
+          node --check focus-menu.js
+          node --check senseis-version.js
+          node --check sw.js
       - name: Fixture tests
         run: node tests/focus-engine.test.cjs
       - name: Universe JSON check
