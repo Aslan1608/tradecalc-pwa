@@ -1,4 +1,4 @@
-const CACHE_VERSION='senseis-pwa-v8';
+const CACHE_VERSION='senseis-pwa-v9';
 const APP_CACHE=`${CACHE_VERSION}-app`;
 const RUNTIME_CACHE=`${CACHE_VERSION}-runtime`;
 const APP_SHELL=[
@@ -22,6 +22,7 @@ const APP_SHELL=[
   './focus-engine.js',
   './focus-menu.js',
   './focus-explainability.js',
+  './focus-list-v2.js',
   './focus-universe.json',
   './pwa-runtime.js',
   './manifest.json',
