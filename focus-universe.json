@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "description": "Startuniversum für den manuellen SenSeiS Focus Scan. Die Aufnahme in FOCUS erfolgt ausschließlich über berechnete Scores und Hysterese.",
+  "tickers": [
+    {"symbol":"AMZN","name":"Amazon"},
+    {"symbol":"GOOG","name":"Alphabet"},
+    {"symbol":"MSFT","name":"Microsoft"},
+    {"symbol":"AAPL","name":"Apple"},
+    {"symbol":"META","name":"Meta Platforms"},
+    {"symbol":"NVDA","name":"Nvidia"},
+    {"symbol":"AVGO","name":"Broadcom"},
+    {"symbol":"ASML","name":"ASML"},
+    {"symbol":"AMD","name":"Advanced Micro Devices"},
+    {"symbol":"CRM","name":"Salesforce"},
+    {"symbol":"ADBE","name":"Adobe"},
+    {"symbol":"NFLX","name":"Netflix"},
+    {"symbol":"COST","name":"Costco"},
+    {"symbol":"JPM","name":"JPMorgan Chase"},
+    {"symbol":"V","name":"Visa"},
+    {"symbol":"MA","name":"Mastercard"}
+  ]
+}
