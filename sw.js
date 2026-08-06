@@ -1,10 +1,9 @@
-const CACHE_VERSION='senseis-pwa-v1';
+const CACHE_VERSION='senseis-pwa-v2';
 const APP_CACHE=`${CACHE_VERSION}-app`;
 const RUNTIME_CACHE=`${CACHE_VERSION}-runtime`;
 const APP_SHELL=[
   './',
   './index.html',
-  './senseis-shell-core.html',
   './senseis-version.js',
   './senseis-timers.js',
   './legacy-main-force.js',
