@@ -3,7 +3,7 @@ const ROOT=typeof window!=='undefined'?window:globalThis;
 const KEY='senseis-focus-engine-v1',SEL='senseis-stock-intelligence-symbol';
 const W={quality:30,valuation:20,growth:16,weekly:20,risk:10,gap:4};
 const L={quality:'Qualität',valuation:'Bewertung',growth:'Wachstum',weekly:'Wochenrelevanz',risk:'Risikoqualität',gap:'Gap Opportunity'};
-const n=v=>Number.isFinite(Number(v))?Number(v):null,cl=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
+const n=v=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))?Number(v):null),cl=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
 const fmt=(v,d=1)=>n(v)==null?'—':n(v).toLocaleString('de-DE',{maximumFractionDigits:d});
 const pct=(v,d=1)=>n(v)==null?'—':`${n(v)>0?'+':''}${fmt(v,d)} %`;
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
