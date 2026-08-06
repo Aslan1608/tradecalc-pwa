@@ -1,4 +1,4 @@
-const CACHE_VERSION='senseis-pwa-v3';
+const CACHE_VERSION='senseis-pwa-v4';
 const APP_CACHE=`${CACHE_VERSION}-app`;
 const RUNTIME_CACHE=`${CACHE_VERSION}-runtime`;
 const APP_SHELL=[
@@ -16,25 +16,17 @@ const APP_SHELL=[
   './news-intelligence-recall-patch.js',
   './news-intelligence-v37.js',
   './news-chronology.js',
+  './senseis-fetch.js',
+  './market-feed.js',
+  './index-universe.js',
   './pwa-runtime.js',
   './manifest.json',
   './icon-180.png',
   './icon-192.png',
   './icon-512.png'
 ];
-
-self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(APP_CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
-});
-
-self.addEventListener('activate',event=>{
-  event.waitUntil((async()=>{
-    const keys=await caches.keys();
-    await Promise.all(keys.filter(key=>key.startsWith('senseis-pwa-')&&!key.startsWith(CACHE_VERSION)).map(key=>caches.delete(key)));
-    await self.clients.claim();
-  })());
-});
-
+self.addEventListener('install',event=>{event.waitUntil(caches.open(APP_CACHE).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('senseis-pwa-')&&!key.startsWith(CACHE_VERSION)).map(key=>caches.delete(key)));await self.clients.claim()})())});
 function isNavigation(request){return request.mode==='navigate'||request.destination==='document'}
 function isStatic(request,url){return url.origin===self.location.origin&&['script','style','image','font','manifest'].includes(request.destination)}
 function isRuntimeData(request,url){if(url.origin!==self.location.origin)return false;return /news|quote|financial|earnings|market|company/.test(url.pathname.toLowerCase())}
