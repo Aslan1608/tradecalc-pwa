@@ -1,4 +1,4 @@
-const CACHE_VERSION='senseis-pwa-v4';
+const CACHE_VERSION='senseis-pwa-v5';
 const APP_CACHE=`${CACHE_VERSION}-app`;
 const RUNTIME_CACHE=`${CACHE_VERSION}-runtime`;
 const APP_SHELL=[
@@ -6,7 +6,7 @@ const APP_SHELL=[
   './index.html',
   './senseis-version.js',
   './senseis-timers.js',
-  './legacy-main-force.js',
+  './trade-tools-frame-stability.js',
   './finnhub-key-persistence.js',
   './stock-intelligence-stability.js',
   './stock-intelligence.js',

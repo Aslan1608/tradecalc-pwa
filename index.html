@@ -46,9 +46,7 @@
 <div class="section-title"><h2>Schnellzugriff</h2><span>Letzter Stand bleibt gespeichert</span></div>
 <div class="card"><div id="lastTrade"><div class="eyebrow">LETZTER TRADE</div><h3>Noch kein Trade geladen</h3><p>Der letzte Screenshot-Import erscheint hier automatisch.</p></div><div class="quick"><button data-go="trade">Trade planen</button><button data-go="stocks">Aktie analysieren</button></div></div>
 </div></section>
-
-<section id="view-trade" class="view"><div class="module-head"><div><h2>Trade Calculator</h2><small>Legacy TradeCalc · Screenshot Import</small></div><span class="version">READY</span></div><div class="module-wrap"><iframe id="tradeToolsFrame" class="module-frame" src="./index-core.html?v=legacy-main-fresh-1" title="Trade Calculator"></iframe></div></section>
-
+<section id="view-trade" class="view"><div class="module-head"><div><h2>Trade Calculator</h2><small>TradeCalc Core · Screenshot Import</small></div><span class="version">READY</span></div><div class="module-wrap"><iframe id="tradeToolsFrame" class="module-frame" src="./index-core.html?v=legacy-main-fresh-1" title="Trade Calculator"></iframe></div></section>
 <section id="view-stocks" class="view">
 <div class="module-head"><div><h2>Stock Data Intelligence</h2><small>Fundamentale Aktienanalyse</small></div><span class="version">FOUNDATION</span></div>
 <div class="stock-tabs"><span class="active">Übersicht</span><span>Bewertung</span><span>Analysten</span><span>Finanzen</span><span>Events</span></div>
@@ -60,7 +58,6 @@
 <div class="placeholder"><h3>Events</h3><p>Die bereits funktionierende Earnings- und Event-Risk-Logik wird als erstes Datenmodul hierher migriert.</p></div>
 </div>
 </section>
-
 <section id="view-fx" class="view"><div class="page">
 <div class="fx-hero"><div class="fx-symbol">⇄</div><h2>FX Dashboard</h2><p>Die zentrale FX Decision Engine wird hier Modul für Modul eingebaut.</p></div>
 <div class="section-title"><h2>Geplante Module</h2><span>Roadmap</span></div>
@@ -71,7 +68,6 @@
 <div class="road"><div>▦</div><div><b>Orderflow & Footprint</b><span>Imbalances, Finished Business und weitere Signale</span></div></div>
 <div class="road"><div>!</div><div><b>Macro & Event Risk</b><span>Zinsen, Wirtschaftsdaten und News</span></div></div>
 </div></div></section>
-
 <section id="view-more" class="view"><div class="page"><div class="section-title"><h2>Mehr</h2><span>System & Einstellungen</span></div><div class="more-list">
 <div class="more-btn"><div><b>API & Daten</b><small>Finnhub-Key wird weiterhin im Trade Calculator verwaltet</small></div><span>›</span></div>
 <div class="more-btn"><div><b>SenSeiS Terminal</b><small><span data-senseis-version></span> · persönliches Trading Dashboard</small></div><span>○</span></div>
@@ -96,7 +92,7 @@ renderLastTrade();window.addEventListener('storage',renderLastTrade);let initial
 })();
 </script>
 <script src="./pwa-runtime.js"></script>
-<script src="./legacy-main-force.js?v=1"></script>
+<script src="./trade-tools-frame-stability.js?v=1"></script>
 <script src="./finnhub-key-persistence.js?v=3"></script>
 <script src="./stock-intelligence-stability.js?v=2"></script>
 <script src="./senseis-timers.js"></script>
