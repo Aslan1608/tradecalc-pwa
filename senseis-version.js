@@ -1,9 +1,9 @@
 (()=>{'use strict';
-const VERSION='3.9';
+const VERSION='3.10';
 const LABEL='FOUNDATION '+VERSION;
 window.SENSEIS_VERSION=VERSION;
 window.SENSEIS_VERSION_LABEL=LABEL;
-window.SENSEIS_BUILD_LABEL='Resilient News';
+window.SENSEIS_BUILD_LABEL='Installable PWA';
 function apply(root=document){
   root.querySelectorAll?.('[data-senseis-version]').forEach(el=>{el.textContent=LABEL});
   root.querySelectorAll?.('.v37-version').forEach(el=>{el.textContent=LABEL});
