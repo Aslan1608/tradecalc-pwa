@@ -5,10 +5,12 @@ on:
     paths:
       - 'focus-engine.js'
       - 'focus-menu.js'
+      - 'focus-explainability.js'
       - 'focus-universe.json'
       - 'senseis-version.js'
       - 'sw.js'
       - 'tests/focus-engine.test.cjs'
+      - 'tests/focus-explainability.test.cjs'
       - '.github/workflows/focus-engine-check.yml'
   workflow_dispatch:
 
@@ -27,9 +29,12 @@ jobs:
         run: |
           node --check focus-engine.js
           node --check focus-menu.js
+          node --check focus-explainability.js
           node --check senseis-version.js
           node --check sw.js
       - name: Fixture tests
-        run: node tests/focus-engine.test.cjs
+        run: |
+          node tests/focus-engine.test.cjs
+          node tests/focus-explainability.test.cjs
       - name: Universe JSON check
         run: node -e "JSON.parse(require('fs').readFileSync('focus-universe.json','utf8')); console.log('focus-universe.json valid')"
