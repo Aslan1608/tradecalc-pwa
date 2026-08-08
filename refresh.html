@@ -7,22 +7,22 @@
 <title>SenSeiS Terminal aktualisieren</title>
 <style>html,body{margin:0;min-height:100%;background:#050607;color:#f7f8fa;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}.card{width:min(420px,100%);border:1px solid #29303a;border-radius:20px;background:#0d1014;padding:22px}.ey{font-size:10px;font-weight:900;letter-spacing:.13em;color:#8c95a3}.title{font-size:24px;font-weight:900;margin:8px 0}.msg{font-size:13px;line-height:1.55;color:#aab2bf}.ok{color:#30d158}.err{color:#ff6961}</style>
 </head>
-<body><div class="wrap"><div class="card"><div class="ey">SENSEIS TERMINAL</div><div class="title">Update wird erzwungen …</div><div id="msg" class="msg">Alten PWA-Cache und Service Worker werden entfernt.</div></div></div>
+<body><div class="wrap"><div class="card"><div class="ey">SENSEIS TERMINAL</div><div class="title">Update wird erzwungen …</div><div id="msg" class="msg">Alter SenSeiS-PWA-Cache und Service Worker werden entfernt.</div></div></div>
 <script>
 (async()=>{
   const msg=document.getElementById('msg');
   try{
     if('serviceWorker' in navigator){
       const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r=>r.unregister()));
+      await Promise.all(regs.filter(r=>r.scope.includes('/tradecalc-pwa/')).map(r=>r.unregister()));
     }
     if('caches' in window){
       const keys=await caches.keys();
-      await Promise.all(keys.map(k=>caches.delete(k)));
+      await Promise.all(keys.filter(k=>k.startsWith('senseis-pwa-')).map(k=>caches.delete(k)));
     }
     try{sessionStorage.removeItem('senseis-view')}catch{}
     msg.className='msg ok';
-    msg.textContent='Cache gelöscht. Foundation 5.4 wird jetzt frisch geladen.';
+    msg.textContent='SenSeiS-Cache gelöscht. Foundation 5.4 wird jetzt frisch geladen.';
     setTimeout(()=>location.replace('./?fresh=foundation-5-4-'+Date.now()),450);
   }catch(error){
     msg.className='msg err';
