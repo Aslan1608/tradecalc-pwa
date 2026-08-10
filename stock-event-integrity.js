@@ -1,0 +1,22 @@
+(()=>{'use strict';
+const FINNHUB_KEY='tradecalc-finnhub-key';
+let requestId=0,done='';
+const $=id=>document.getElementById(id);
+const n=v=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
+const clean=v=>String(v||'').trim().toUpperCase().replace(/\.DE$/,'');
+function ticker(){return clean($('siSymbol')?.value)}
+function key(){return String(localStorage.getItem(FINNHUB_KEY)||'').trim()}
+function iso(d){return d.toISOString().slice(0,10)}
+function addDays(d,x){return new Date(d.getTime()+x*86400000)}
+function fmtDate(v){if(!v)return'Nicht verfügbar';const d=new Date(v+'T12:00:00');return Number.isFinite(d.getTime())?d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):v}
+function fmt(v,d=3){return n(v)==null?'—':n(v).toLocaleString('de-DE',{maximumFractionDigits:d})}
+function daysUntil(value){if(!value)return null;const a=new Date();a.setHours(12,0,0,0);const b=new Date(value+'T12:00:00');return Math.round((b-a)/86400000)}
+function hourText(h){return h==='bmo'?'Vor Börsenöffnung':h==='amc'?'Nach Börsenschluss':h==='dmh'?'Während Börsenhandel':'Zeitpunkt nicht angegeben'}
+async function getJson(url){const r=await fetch(url,{cache:'no-store'});const text=await r.text();let data={};try{data=text?JSON.parse(text):{}}catch{}if(!r.ok)throw new Error(data?.error||`HTTP_${r.status}`);if(data?.error)throw new Error(data.error);return data}
+async function load(symbol){const token=key();if(!token)throw new Error('FINNHUB_KEY_FEHLT');const now=new Date(),from=iso(addDays(now,-370)),to=iso(addDays(now,190));const params=new URLSearchParams({from,to,symbol,token});const [calendar,history]=await Promise.all([getJson('https://finnhub.io/api/v1/calendar/earnings?'+params.toString()),getJson('https://finnhub.io/api/v1/stock/earnings?symbol='+encodeURIComponent(symbol)+'&limit=8&token='+encodeURIComponent(token)).catch(()=>[])]);const rows=Array.isArray(calendar?.earningsCalendar)?calendar.earningsCalendar:[],today=iso(now);const next=rows.filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;const past=rows.filter(x=>x.date<today).sort((a,b)=>b.date.localeCompare(a.date))[0]||null;const hist=Array.isArray(history)?history:[];let h=null;if(past){h=hist.find(x=>x.period&&String(x.period)<=past.date)||hist[0]||null}else h=hist[0]||null;return{next,past,history:h}}
+function render(data,symbol){const box=$('siEvents');if(!box)return;const next=data.next,last=data.past,h=data.history,days=daysUntil(next?.date);let cls='good',label='🟢 KEIN EVENT ≤ 7 TAGE';if(days===0){cls='bad';label='🔴 EVENT HEUTE'}else if(days!=null&&days>=1&&days<=7){cls='warn';label='🟠 EVENT DIESE WOCHE'}const nextText=next?.date?`${fmtDate(next.date)}${days===0?' · heute':days===1?' · morgen':days>1?' · in '+days+' Tagen':''}`:'Kein bestätigter Termin';box.innerHTML=`<div class="si-section-title"><h3>Events</h3><span class="si-chip ${cls}">${label}</span></div><div class="si-event"><div><span>NÄCHSTES EARNINGS-EVENT</span><strong>${nextText}</strong><div class="si-note">${next?.hour?hourText(next.hour):'Zeitpunkt nicht angegeben'}</div></div><div><span>LETZTE ERGEBNISVERÖFFENTLICHUNG</span><strong>${last?.date?fmtDate(last.date):'Nicht verfügbar'}</strong><div class="si-note">${h?.period?`Berichtsperiode: ${fmtDate(h.period)}`:'Berichtsperiode nicht verfügbar'}${h?.actual!=null?` · EPS Ist: ${fmt(h.actual)}`:''}</div></div></div><div class="si-source">Finnhub Earnings Calendar · Veröffentlichungsdatum und Berichtsperiode werden getrennt angezeigt.</div>`;box.dataset.eventIntegrity='v2';done=symbol}
+async function run(force=false){const symbol=ticker(),box=$('siEvents');if(!symbol||!box||(!force&&done===symbol))return;const id=++requestId;try{const data=await load(symbol);if(id!==requestId||ticker()!==symbol)return;render(data,symbol)}catch(error){if(id!==requestId)return;console.warn('SenSeiS event integrity',error)}}
+function reset(){done='';setTimeout(()=>run(true),700)}
+function boot(){document.addEventListener('change',e=>{if(e.target?.id==='siSymbol')reset()});document.addEventListener('click',e=>{if(e.target?.id==='siRefresh')reset()});const ob=new MutationObserver(()=>{const box=$('siEvents');if(box&&box.dataset.eventIntegrity!=='v2'&&done!==ticker())setTimeout(()=>run(false),250)});ob.observe(document.body,{subtree:true,childList:true});setTimeout(()=>run(true),1600)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
