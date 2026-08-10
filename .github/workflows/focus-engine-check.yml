@@ -4,16 +4,20 @@ on:
   pull_request:
     paths:
       - 'focus-engine.js'
+      - 'focus-quality-v2.js'
       - 'focus-menu.js'
-      - 'focus-explainability.js'
+      - 'focus-explainability-v2.js'
       - 'focus-list-v2.js'
-      - 'focus-decision.js'
+      - 'focus-list-semantics-v2.js'
+      - 'focus-decision-v2.js'
       - 'focus-universe.json'
+      - 'stock-financials-recovery.js'
+      - 'stock-event-integrity.js'
+      - 'news-directness-v1.js'
       - 'senseis-version.js'
       - 'sw.js'
       - 'tests/focus-engine.test.cjs'
-      - 'tests/focus-explainability.test.cjs'
-      - 'tests/focus-decision.test.cjs'
+      - 'tests/focus-semantics-v2.test.cjs'
       - '.github/workflows/focus-engine-check.yml'
   workflow_dispatch:
 
@@ -31,17 +35,21 @@ jobs:
       - name: Syntax check
         run: |
           node --check focus-engine.js
+          node --check focus-quality-v2.js
           node --check focus-menu.js
-          node --check focus-explainability.js
+          node --check focus-explainability-v2.js
           node --check focus-list-v2.js
-          if [ -f focus-decision.js ]; then node --check focus-decision.js; fi
+          node --check focus-list-semantics-v2.js
+          node --check focus-decision-v2.js
+          node --check stock-financials-recovery.js
+          node --check stock-event-integrity.js
+          node --check news-directness-v1.js
           node --check senseis-version.js
           node --check sw.js
       - name: Fixture tests
         run: |
           node tests/focus-engine.test.cjs
-          node tests/focus-explainability.test.cjs
-          if [ -f tests/focus-decision.test.cjs ]; then node tests/focus-decision.test.cjs; fi
+          node tests/focus-semantics-v2.test.cjs
       - name: Universe JSON check
         run: |
           node - <<'NODE'
