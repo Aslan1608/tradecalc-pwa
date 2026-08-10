@@ -1,15 +1,19 @@
 (()=>{'use strict';
-const VERSION='5.4';
+const VERSION='5.5';
 const LABEL='FOUNDATION '+VERSION;
 window.SENSEIS_VERSION=VERSION;
 window.SENSEIS_VERSION_LABEL=LABEL;
-window.SENSEIS_BUILD_LABEL='Focus Decision Status';
+window.SENSEIS_BUILD_LABEL='Focus Semantics & Data Integrity';
 function apply(root=document){root.querySelectorAll?.('[data-senseis-version]').forEach(el=>{el.textContent=LABEL});root.querySelectorAll?.('.v37-version').forEach(el=>{el.textContent=LABEL});root.querySelectorAll?.('[data-senseis-build]').forEach(el=>{el.textContent=window.SENSEIS_BUILD_LABEL})}
-function loadOverview(){if(document.querySelector('script[data-senseis-focus-overview]'))return;const script=document.createElement('script');script.dataset.senseisFocusOverview='1';script.src='./focus-list-v2.js?v=2';document.head.appendChild(script)}
-function loadDecision(){const existing=document.querySelector('script[data-senseis-focus-decision]');if(existing){loadOverview();return}const script=document.createElement('script');script.dataset.senseisFocusDecision='1';script.src='./focus-decision.js?v=1';script.onload=loadOverview;script.onerror=loadOverview;document.head.appendChild(script)}
-function loadExplain(){const existing=document.querySelector('script[data-senseis-focus-explain]');if(existing){loadDecision();return}const script=document.createElement('script');script.dataset.senseisFocusExplain='1';script.src='./focus-explainability.js?v=1';script.onload=loadDecision;script.onerror=loadDecision;document.head.appendChild(script)}
-function loadMenu(){const existing=document.querySelector('script[data-senseis-focus-menu]');if(existing){loadExplain();return}const script=document.createElement('script');script.dataset.senseisFocusMenu='1';script.src='./focus-menu.js?v=1';script.onload=loadExplain;script.onerror=loadExplain;document.head.appendChild(script)}
-function loadFocus(){const existing=document.querySelector('script[data-senseis-focus]');if(existing){loadMenu();return}const script=document.createElement('script');script.dataset.senseisFocus='1';script.src='./focus-engine.js?v=1';script.onload=loadMenu;script.onerror=loadMenu;document.head.appendChild(script)}
+function loadScript(key,src,next){if(document.querySelector(`script[data-senseis-${key}]`)){next?.();return}const s=document.createElement('script');s.dataset['senseis'+key.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('')]='1';s.src=src;s.onload=()=>next?.();s.onerror=()=>next?.();document.head.appendChild(s)}
+function loadExtras(){loadScript('event-integrity','./stock-event-integrity.js?v=1');loadScript('news-directness','./news-directness-v1.js?v=1')}
+function loadListSemantics(){loadScript('focus-list-semantics','./focus-list-semantics-v2.js?v=1',loadExtras)}
+function loadOverview(){loadScript('focus-overview','./focus-list-v2.js?v=3',loadListSemantics)}
+function loadExplain(){loadScript('focus-explain-v2','./focus-explainability-v2.js?v=1',loadOverview)}
+function loadDecision(){loadScript('focus-decision-v2','./focus-decision-v2.js?v=1',loadExplain)}
+function loadMenu(){loadScript('focus-menu','./focus-menu.js?v=1',loadDecision)}
+function loadQuality(){loadScript('focus-quality-v2','./focus-quality-v2.js?v=1',loadMenu)}
+function loadFocus(){loadScript('focus','./focus-engine.js?v=1',loadQuality)}
 function boot(){apply();loadFocus();const observer=new MutationObserver(records=>{for(const record of records){for(const node of record.addedNodes){if(node.nodeType===1)apply(node)}}});observer.observe(document.documentElement,{subtree:true,childList:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
