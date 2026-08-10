@@ -1,4 +1,4 @@
-const CACHE_VERSION='senseis-pwa-v11';
+const CACHE_VERSION='senseis-pwa-v12';
 const APP_CACHE=`${CACHE_VERSION}-app`;
 const RUNTIME_CACHE=`${CACHE_VERSION}-runtime`;
 const APP_SHELL=[
@@ -11,19 +11,23 @@ const APP_SHELL=[
   './stock-intelligence-stability.js',
   './stock-intelligence.js',
   './stock-financials-recovery.js',
+  './stock-event-integrity.js',
   './senseis-news-observer-scope.js',
   './news-intelligence-data.js',
   './news-intelligence-recall-patch.js',
   './news-intelligence-v37.js',
+  './news-directness-v1.js',
   './news-chronology.js',
   './senseis-fetch.js',
   './market-feed.js',
   './index-universe.js',
   './focus-engine.js',
+  './focus-quality-v2.js',
   './focus-menu.js',
-  './focus-explainability.js',
-  './focus-decision.js',
+  './focus-decision-v2.js',
+  './focus-explainability-v2.js',
   './focus-list-v2.js',
+  './focus-list-semantics-v2.js',
   './focus-universe.json',
   './pwa-runtime.js',
   './manifest.json',
