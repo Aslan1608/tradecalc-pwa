@@ -22,8 +22,8 @@
     }
     try{sessionStorage.removeItem('senseis-view')}catch{}
     msg.className='msg ok';
-    msg.textContent='SenSeiS-Cache gelöscht. Foundation 5.4 wird jetzt frisch geladen.';
-    setTimeout(()=>location.replace('./?fresh=foundation-5-4-'+Date.now()),450);
+    msg.textContent='SenSeiS-Cache gelöscht. Die aktuelle Foundation wird jetzt frisch geladen.';
+    setTimeout(()=>location.replace('./?fresh=foundation-5-5-'+Date.now()),450);
   }catch(error){
     msg.className='msg err';
     msg.textContent='Automatisches Bereinigen fehlgeschlagen: '+String(error?.message||error);
