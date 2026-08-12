@@ -1,9 +1,9 @@
 (()=>{'use strict';
-const VERSION='5.5.1';
+const VERSION='5.5.2';
 const LABEL='FOUNDATION '+VERSION;
 window.SENSEIS_VERSION=VERSION;
 window.SENSEIS_VERSION_LABEL=LABEL;
-window.SENSEIS_BUILD_LABEL='Focus Runtime Stability';
+window.SENSEIS_BUILD_LABEL='Persistent API Vault';
 function apply(root=document){root.querySelectorAll?.('[data-senseis-version]').forEach(el=>{el.textContent=LABEL});root.querySelectorAll?.('.v37-version').forEach(el=>{el.textContent=LABEL});root.querySelectorAll?.('[data-senseis-build]').forEach(el=>{el.textContent=window.SENSEIS_BUILD_LABEL})}
 function loadScript(key,src,next){if(document.querySelector(`script[data-senseis-${key}]`)){next?.();return}const s=document.createElement('script');s.dataset['senseis'+key.split('-').map(x=>x[0].toUpperCase()+x.slice(1)).join('')]='1';s.src=src;s.onload=()=>next?.();s.onerror=()=>next?.();document.head.appendChild(s)}
 function loadExtras(){loadScript('event-integrity','./stock-event-integrity.js?v=1');loadScript('news-directness','./news-directness-v1.js?v=2')}
