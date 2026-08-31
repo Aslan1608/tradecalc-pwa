@@ -17,6 +17,7 @@ on:
       - 'finnhub-key-persistence.js'
       - 'live-data-restore.js'
       - 'calculator.html'
+      - 'pwa-runtime.js'
       - 'senseis-version.js'
       - 'sw.js'
       - 'tests/focus-engine.test.cjs'
@@ -49,6 +50,7 @@ jobs:
           node --check news-directness-v1.js
           node --check finnhub-key-persistence.js
           node --check live-data-restore.js
+          node --check pwa-runtime.js
           node --check senseis-version.js
           node --check sw.js
       - name: Live quote regression guard
@@ -63,6 +65,7 @@ jobs:
           fi
           grep -Fq 'live-data-restore.js?v=1' calculator.html
           grep -Fq 'finnhub-key-persistence.js?v=5' calculator.html
+          grep -Fq "senseis-sw-reloaded-v15" pwa-runtime.js
       - name: Fixture tests
         run: |
           node tests/focus-engine.test.cjs
