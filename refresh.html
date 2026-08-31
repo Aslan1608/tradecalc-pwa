@@ -24,8 +24,8 @@
     }
     try{for(const [key,value] of Object.entries(preserved))localStorage.setItem(key,value);sessionStorage.removeItem('senseis-view')}catch{}
     msg.className='msg ok';
-    msg.textContent='App-Cache erneuert. API-Vault und Einstellungen wurden beibehalten. Foundation 5.5.2 wird jetzt geladen.';
-    setTimeout(()=>location.replace('./?fresh=foundation-5-5-2-'+Date.now()),450);
+    msg.textContent='App-Cache erneuert. API-Vault und Einstellungen wurden beibehalten. Foundation 5.5.3 wird jetzt geladen.';
+    setTimeout(()=>location.replace('./?fresh=foundation-5-5-3-'+Date.now()),450);
   }catch(error){
     msg.className='msg err';
     msg.textContent='Automatisches Aktualisieren fehlgeschlagen: '+String(error?.message||error);
