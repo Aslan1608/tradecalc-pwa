@@ -1,5 +1,7 @@
 (()=>{'use strict';
 const FINNHUB_KEY='tradecalc-finnhub-key';
+const REQUEST_LOG='tradecalc-api-reqs';
+const DAX=new Set(['ADS','AIR','ALV','BAS','BAYN','BEI','BMW','BNR','CBK','CON','DTG','DBK','DB1','DHL','DTE','EOAN','FRE','FME','G1A','HNR1','HEI','HEN3','HOT','IFX','MBG','MRK','MTX','MUV2','QIA','RHM','RWE','SAP','G24','SIE','ENR','SHL','SY1','VOW3','VNA','ZAL']);
 let calculatorRetryDone=false;
 let stockRetryDone=false;
 let rateRetryTimer=0;
@@ -7,6 +9,28 @@ let rateRetryTimer=0;
 function key(){try{return String(localStorage.getItem(FINNHUB_KEY)||'').trim()}catch{return''}}
 function text(id){return String(document.getElementById(id)?.textContent||'').trim()}
 function clickOnce(id){const button=document.getElementById(id);if(!button||button.disabled)return false;button.click();return true}
+function calculatorTicker(){return String(document.getElementById('stock')?.value||'').trim().toUpperCase().replace(/\.DE$/,'')}
+function isDaxCalculator(){return DAX.has(calculatorTicker())}
+
+function installRequestBudgetRepair(){
+  if(window.__senseisRequestBudgetRepair)return;
+  window.__senseisRequestBudgetRepair=true;
+  const previousGet=Storage.prototype.getItem;
+  const previousSet=Storage.prototype.setItem;
+  let usLog='[]';
+  Storage.prototype.getItem=function(storageKey){
+    if(this===localStorage&&storageKey===REQUEST_LOG)return isDaxCalculator()?'[]':usLog;
+    return previousGet.call(this,storageKey);
+  };
+  Storage.prototype.setItem=function(storageKey,value){
+    if(this===localStorage&&storageKey===REQUEST_LOG){
+      if(isDaxCalculator())return;
+      try{const parsed=JSON.parse(String(value||'[]'));usLog=JSON.stringify(Array.isArray(parsed)?parsed:[])}catch{usLog='[]'}
+      return;
+    }
+    return previousSet.call(this,storageKey,value);
+  };
+}
 
 function recoverCalculator(){
   if(calculatorRetryDone||!key())return;
@@ -49,6 +73,7 @@ function watchRateLimit(){
 }
 
 async function boot(){
+  installRequestBudgetRepair();
   const api=window.SenSeiSApiPersistence;
   if(!api)return;
   try{
