@@ -14,6 +14,10 @@ on:
       - 'stock-financials-recovery.js'
       - 'stock-event-integrity.js'
       - 'news-directness-v1.js'
+      - 'finnhub-key-persistence.js'
+      - 'live-data-restore.js'
+      - 'calculator.html'
+      - 'pwa-runtime.js'
       - 'senseis-version.js'
       - 'sw.js'
       - 'tests/focus-engine.test.cjs'
@@ -44,8 +48,24 @@ jobs:
           node --check stock-financials-recovery.js
           node --check stock-event-integrity.js
           node --check news-directness-v1.js
+          node --check finnhub-key-persistence.js
+          node --check live-data-restore.js
+          node --check pwa-runtime.js
           node --check senseis-version.js
           node --check sw.js
+      - name: Live quote regression guard
+        run: |
+          if grep -Fq "document.getElementById('refreshLive')?.click()" finnhub-key-persistence.js; then
+            echo 'API vault must not simulate repeated live refresh clicks' >&2
+            exit 1
+          fi
+          if grep -Fq "document.getElementById('siRefresh')?.click()" finnhub-key-persistence.js; then
+            echo 'API vault must not simulate repeated Stock Intelligence refresh clicks' >&2
+            exit 1
+          fi
+          grep -Fq 'live-data-restore.js?v=1' calculator.html
+          grep -Fq 'finnhub-key-persistence.js?v=5' calculator.html
+          grep -Fq "senseis-sw-reloaded-v15" pwa-runtime.js
       - name: Fixture tests
         run: |
           node tests/focus-engine.test.cjs

@@ -35,16 +35,17 @@ async function dbDelete(record){let db;try{db=await openDb();await new Promise((
 function configFor(key){return CONFIG[key]||null}
 function primaryFor(key){if(CONFIG[key])return key;return Object.keys(CONFIG).find(primary=>CONFIG[primary].backup===key)||''}
 function read(key){const cfg=configFor(key);if(!cfg)return'';return localRead(key,cfg.clean)||localRead(cfg.backup,cfg.clean)||cookieRead(cfg.cookie,cfg.clean)||memory[key]||''}
+function syncVisibleInput(primary){
+  setTimeout(()=>{
+    try{const input=document.getElementById('apiKeyInput');if(input&&primary==='tradecalc-finnhub-key')input.value=read(primary)}catch{}
+    try{const input=document.getElementById('marketFeedUrlInput');if(input&&primary==='senseis-market-feed-url')input.value=read(primary)}catch{}
+  },0);
+}
 function notify(key,source='updated',broadcast=true){
   const primary=primaryFor(key);if(!primary)return;
   if(broadcast)try{channel?.postMessage({type:'api-setting',key:primary,source})}catch{}
   try{window.dispatchEvent(new CustomEvent('senseis:api-settings-restored',{detail:{key:primary,source}}))}catch{}
-  [120,500,1400,3000].forEach(delay=>setTimeout(()=>{
-    try{document.getElementById('refreshLive')?.click()}catch{}
-    try{document.getElementById('siRefresh')?.click()}catch{}
-    try{const input=document.getElementById('apiKeyInput');if(input&&primary==='tradecalc-finnhub-key')input.value=read(primary)}catch{}
-    try{const input=document.getElementById('marketFeedUrlInput');if(input&&primary==='senseis-market-feed-url')input.value=read(primary)}catch{}
-  },delay));
+  syncVisibleInput(primary);
 }
 function persist(key,value,announce=true){const cfg=configFor(key);if(!cfg)return'';const clean=cfg.clean(value);if(!clean)return'';memory[key]=clean;localWrite(key,clean);localWrite(cfg.backup,clean);cookieWrite(cfg.cookie,clean);dbWrite(cfg.record,clean);try{navigator.storage?.persist?.()}catch{}if(announce)notify(key,'saved',true);return clean}
 function clear(key,announce=true){const cfg=configFor(key);if(!cfg)return;memory[key]='';localDelete(key);localDelete(cfg.backup);cookieDelete(cfg.cookie);dbDelete(cfg.record);if(announce)notify(key,'cleared',true)}

@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const LAST_ONLINE_KEY='senseis-last-online-at';
-const UPDATE_RELOAD_KEY='senseis-sw-reloaded-v11';
+const UPDATE_RELOAD_KEY='senseis-sw-reloaded-v15';
 function rememberOnline(){try{localStorage.setItem(LAST_ONLINE_KEY,String(Date.now()))}catch{}}
 function ageLabel(){
   try{
